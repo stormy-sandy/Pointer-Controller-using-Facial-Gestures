@@ -112,35 +112,35 @@ class Model_X:
 
 
     def preprocess_input(self, image):
-    '''
-    Before feeding the data into the model for inference,
-    you might have to preprocess it. This function is where you can do that.
 
-    '''
-    input_img = image
+        '''
+        Before feeding the data into the model for inference,
+        you might have to preprocess it. This function is where you can do that.
 
-    n, c, h, w = self.input_shape
+        '''
+        input_img = image
 
-    input_img = cv2.resize(input_img, (w, h), interpolation=cv2.INTER_AREA)
+        n, c, h, w = self.input_shape
 
-    # Change image from HWC to CHW
-    input_img = input_img.transpose((2, 0, 1))
-    input_img = input_img.reshape((n, c, h, w))
+        input_img = cv2.resize(input_img, (w, h), interpolation=cv2.INTER_AREA)
 
-    return input_img
+        # Change image from HWC to CHW
+        input_img = input_img.transpose((2, 0, 1))
+        input_img = input_img.reshape((n, c, h, w))
+
+        return input_img
 
 
     def preprocess_output(self, outputs):
-    '''
+        '''
     Before feeding the output of this model to the next model,
     you might have to preprocess the output. This function is where you can do that.
     '''
-    bounding_box = []
+        bounding_box = []
 
-    for value in outputs[0][0]:
-        # check if confidence is greater than probability threshold
-        if value[2] > self.threshold:
-            bounding_box.append(value)
-    return bounding_box
+        for value in outputs[0][0]:
+           # check if confidence is greater than probability threshold
+           if value[2] > self.threshold:
+              bounding_box.append(value)
+        return bounding_box
 
-0
