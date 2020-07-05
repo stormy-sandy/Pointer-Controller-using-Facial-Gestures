@@ -26,12 +26,8 @@
     </select>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="552ea8de-f5ad-4923-bec4-d829ac7fe4aa" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/Pointer-Controller-using-Facial-Gestures.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/Pointer-Controller-using-Facial-Gestures.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+    <list default="true" id="552ea8de-f5ad-4923-bec4-d829ac7fe4aa" name="Default Changelist" comment="indent  correction">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/face_detection.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/face_detection.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -92,8 +88,17 @@
       <option name="presentableId" value="Default" />
       <updated>1593604101098</updated>
       <workItem from="1593604138287" duration="1489000" />
-      <workItem from="1593626239411" duration="3023000" />
+      <workItem from="1593626239411" duration="4336000" />
+      <workItem from="1593873248198" duration="590000" />
     </task>
+    <task id="LOCAL-00001" summary="indent  correction">
+      <created>1593633688771</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1593633688771</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -123,11 +128,19 @@
     </option>
     <option name="oldMeFiltersMigrated" value="true" />
   </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="indent  correction" />
+    <option name="LAST_COMMIT_MESSAGE" value="indent  correction" />
+  </component>
   <component name="WindowStateProjectService">
     <state x="275" y="27" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1593627841066">
       <screen x="0" y="0" width="1366" height="738" />
     </state>
     <state x="275" y="27" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1366.738@0.0.1366.738" timestamp="1593627841066" />
+    <state x="393" y="89" key="RollbackChangesDialog" timestamp="1593873840689">
+      <screen x="0" y="0" width="1366" height="738" />
+    </state>
+    <state x="393" y="89" key="RollbackChangesDialog/0.0.1366.738@0.0.1366.738" timestamp="1593873840689" />
     <state x="184" y="13" key="SettingsEditor" timestamp="1593604468768">
       <screen x="0" y="0" width="1366" height="738" />
     </state>
