@@ -70,7 +70,7 @@ class Model_X:
             ymax = int(value[6] * initial_h)
             cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 55, 255), 2)
             bounding_box.append([xmin, ymin, xmax, ymax])
-        return bounding_box, imag
+        return bounding_box, image
 
     def predict(self, image):
         '''
@@ -112,34 +112,34 @@ class Model_X:
 
 
     def preprocess_input(self, image):
-    '''
-    Before feeding the data into the model for inference,
-    you might have to preprocess it. This function is where you can do that.
+        """
+        Before feeding the data into the model for inference,
+        you might have to preprocess it. This function is where you can do that.
 
-    '''
-    input_img = image
+        """
+        input_img = image
 
-    n, c, h, w = self.input_shape
+        n, c, h, w = self.input_shape
 
-    input_img = cv2.resize(input_img, (w, h), interpolation=cv2.INTER_AREA)
+        input_img = cv2.resize(input_img, (w, h), interpolation=cv2.INTER_AREA)
 
-    # Change image from HWC to CHW
-    input_img = input_img.transpose((2, 0, 1))
-    input_img = input_img.reshape((n, c, h, w))
+        # Change image from HWC to CHW
+        input_img = input_img.transpose((2, 0, 1))
+        input_img = input_img.reshape((n, c, h, w))
 
-    return input_img
+        return input_img
 
 
     def preprocess_output(self, outputs):
-    '''
-    Before feeding the output of this model to the next model,
-    you might have to preprocess the output. This function is where you can do that.
-    '''
-    bounding_box = []
+        '''
+        Before feeding the output of this model to the next model,
+        you might have to preprocess the output. This function is where you can do that.
+        '''
+        bounding_box = []
 
-    for value in outputs[0][0]:
-        # check if confidence is greater than probability threshold
-        if value[2] > self.threshold:
-            bounding_box.append(value)
-    return bounding_box
+        for value in outputs[0][0]:
+         # check if confidence is greater than probability threshold
+            if value[2] > self.threshold:
+                bounding_box.append(value)
+        return bounding_box
 
