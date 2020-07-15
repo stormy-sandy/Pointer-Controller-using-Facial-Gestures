@@ -4,20 +4,21 @@ import time
 import socket
 import json
 import cv2
-
 import logging
-
-
-from argparse import ArgumentParser
-from face_detection import FaceDetectionModel
-from input_feeder import InputFeeder
 import sys
 import numpy as np
+
+from argparse import ArgumentParser
+from input_feeder import InputFeeder
+
+
 from random import randint
 from inference import Network
-from facial_landmarks_detection import FacialLandMarksDetectionModel
-from head_pose_estimation import HeadPoseEstimationModel
-from gaze_estimation import GazeEstimationModel 
+
+from src.face_detection import face_det_Model
+from src.facial_landmarks_detection import Facial_Landmarks_Detection_Model
+from src.head_pose_estimation import Head_pose_Model
+from src.gaze_estimation import Gaze_est_Model 
 from mouse_controller import MouseController
 
 #import _thread

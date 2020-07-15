@@ -12,7 +12,7 @@ import os
 import cv2
 import argparse
 import sys
-class Model_X:
+class face_det_Model:
     '''
     Class for the Face Detection Model.
     '''

@@ -7,7 +7,7 @@ import argparse
 import sys
 import logging as log
 
-class Model_Facial_Landmarks_Detection:
+class Facial_Landmarks_Detection_Model:
     '''
     Class for the Facial Landmark Detection Model.
     '''
