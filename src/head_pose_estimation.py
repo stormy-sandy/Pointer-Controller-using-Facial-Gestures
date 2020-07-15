@@ -45,7 +45,7 @@ class Head_pose_Model:
         self.core = IECore()
         self.net = self.core.load_network(network=self.model, device_name=self.device, num_requests=1)
 
-    def draw_outputs(self, image):
+    def draw_outputs(self,coords, image):
         """
         Draws outputs or predictions on image.
 
@@ -59,18 +59,23 @@ class Head_pose_Model:
             bounding boxes above threshold
         """
 
-        initial_h = image.shape[0]
-        initial_w = image.shape[1]
-        bounding_box = []
-        for value in coords:
-            # Draw bounding box on detected objects
-            xmin = int(value[3] * initial_w)
-            ymin = int(value[4] * initial_h)
-            xmax = int(value[5] * initial_w)
-            ymax = int(value[6] * initial_h)
-            cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 55, 255), 2)
-            bounding_box.append([xmin, ymin, xmax, ymax])
-        return bounding_box, image
+        width = image.shape[1]
+        height = image.shape[0]
+        box=[]
+        for ob in coords:
+                # Draw bounding box for object when it's probability is more than
+                #  the specified threshold
+                
+                box_side_1=(int(ob[0] * width),int(ob[1] * height))
+                    
+                box_side_2=(int(ob[2] * width),int(ob[2] * height))
+                    # Write out the frame
+                    
+                    
+                cv2.rectangle(image, box_side_1,box_side_2, (0, 55, 255), 1)
+                box.append([box_side_1[0], box_side_1[1], box_side_2[0], box_side_2[1]])
+                
+        return box, image
 
     def predict(self, image):
         '''
@@ -117,17 +122,11 @@ class Head_pose_Model:
         you might have to preprocess it. This function is where you can do that.
 
         """
-        input_img = image
-
-        n, c, h, w = self.input_shape
-
-        input_img = cv2.resize(input_img, (w, h), interpolation=cv2.INTER_AREA)
-
-        # Change image from HWC to CHW
-        input_img = input_img.transpose((2, 0, 1))
-        input_img = input_img.reshape((n, c, h, w))
-
-        return input_img
+        p_frame = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
+        p_frame = p_frame.transpose((2,0,1))
+        p_frame = p_frame.reshape(1, *p_frame.shape)
+        
+        return p_frame
 
 
     def preprocess_output(self, outputs):
@@ -135,11 +134,13 @@ class Head_pose_Model:
         Before feeding the output of this model to the next model,
         you might have to preprocess the output. This function is where you can do that.
         '''
-        bounding_box = []
-
-        for value in outputs[0][0]:
-         # check if confidence is greater than probability threshold
-            if value[2] > self.threshold:
-                bounding_box.append(value)
-        return bounding_box
+        cords = []
+        for box in outputs[0][0]: # output.shape: 1x1xNx7
+            thresh = box[2]
+            if thresh >= self.threshold:
+                xmin,ymin,xmax,ymax = box[3],box[4],box[5],box[6] 
+                cords.append((xmin, ymin, xmax, ymax))
+                
+                
+        return cords
 
