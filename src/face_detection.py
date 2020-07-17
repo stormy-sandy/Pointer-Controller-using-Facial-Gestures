@@ -7,7 +7,7 @@ This has been provided just to give you an idea of how to structure your model c
 import numpy as np
 import time
 from openvino.inference_engine import IENetwork, IECore
-import logging as log
+
 import os
 import cv2
 import argparse

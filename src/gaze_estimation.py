@@ -55,23 +55,10 @@ class Gaze_est_Model:
 
         Returns:
             the frame
-            the count of people
+            
             bounding boxes above threshold
         """
-
-        initial_h = image.shape[0]
-        initial_w = image.shape[1]
-        bounding_box = []
-        for value in coords:
-            # Draw bounding box on detected objects
-            xmin = int(value[3] * initial_w)
-            ymin = int(value[4] * initial_h)
-            xmax = int(value[5] * initial_w)
-            ymax = int(value[6] * initial_h)
-            cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (0, 55, 255), 2)
-            bounding_box.append([xmin, ymin, xmax, ymax])
-        return bounding_box, image
-
+        
     def predict(self, image):
         '''
         TODO: You will need to complete this method.
@@ -119,15 +106,12 @@ class Gaze_est_Model:
         '''
         input_img = image
 
-        n, c, h, w = self.input_shape
+        p_frame = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
+        p_frame = p_frame.transpose((2,0,1))
+        p_frame = p_frame.reshape(1, *p_frame.shape)
+        
+        return p_frame
 
-        input_img = cv2.resize(input_img, (w, h), interpolation=cv2.INTER_AREA)
-
-        # Change image from HWC to CHW
-        input_img = input_img.transpose((2, 0, 1))
-        input_img = input_img.reshape((n, c, h, w))
-
-        return input_img
 
 
     def preprocess_output(self, outputs):

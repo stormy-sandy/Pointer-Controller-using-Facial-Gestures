@@ -19,7 +19,7 @@ from src.face_detection import face_det_Model
 from src.facial_landmarks_detection import Facial_Landmarks_Detection_Model
 from src.head_pose_estimation import Head_pose_Model
 from src.gaze_estimation import Gaze_est_Model 
-from mouse_controller import MouseController
+from src.mouse_controller import MouseController
 
 #import _thread
 
