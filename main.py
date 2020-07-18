@@ -124,8 +124,8 @@ def infer_on_stream(args):
 
         ### Loop until stream is over ###
         fd_infertime = 0
-        lm_infertime = 0
-        hp_infertime = 0
+        lmd_infertime = 0
+        hpd_infertime = 0
         ge_infertime = 0
         while True:
             # Read the next frame
@@ -153,9 +153,8 @@ def infer_on_stream(args):
                 p_frame = lmd.preprocess_input(face)
                 
                 start_time = time.time()
-                lmoutput = lmd.predict(p_frame)
-                lm_infertime += time.time() - start_time
-                out_frame,left_eye_point,right_eye_point = lmnet.preprocess_output(lmoutput, fbox, out_frame,args.print)
+                out_frame,left_eye_point,right_eye_point = lmd.predict(p_frame)
+                lmd_infertime += time.time() - start_time
 
                 # get head pose estimation
                 p_frame  = hpnet.preprocess_input(face)

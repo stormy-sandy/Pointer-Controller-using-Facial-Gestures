@@ -38,49 +38,37 @@ class Facial_Landmarks_Detection_Model:
 
     def predict(self, image):
         
-        left_eye = []
-        right_eye = []
-        processed_image = self.preprocess_input(image)
-        # Start asynchronous inference for specified request
-        net.start_async(request_id=0,inputs={self.input_name: processed_image})
-        # Wait for the result
-        if net.requests[0].wait(-1) == 0:
-            #get out put
-            outputs = net.requests[0].outputs[self.output_name]
-            outputs= outputs[0]
-            left_eye, right_eye = self.draw_outputs(outputs, image)
+        
+        frame = self.preprocess_input(image)
+        outputs = self.exec_net.infer({self.input_name:img_processed})
+        output=outputs[0]
+
+        l_eye, r_eye,out_image = self.draw_outputs(output, image)
             
-        return left_eye, right_eye, outputs
+        return out_image, l_eye, r_eye
     
     def draw_outputs(self, outputs, image):
         #get image width and hight
-        initial_h = image.shape[0]
-        initial_w = image.shape[1]
+        h = image.shape[0]
+        w = image.shape[1]
+        #left eye processing
+        xl,yl,xr,yr, = outputs[0][0]*w,outputs[1][0]*h,outputs[2][0]*w,outputs[3][0]*h 
         
-        xl,yl = outputs[0][0]*initial_w,outputs[1][0]*initial_h
-        xr,yr = outputs[2][0]*initial_w,outputs[3][0]*initial_h
-        # make box for left eye 
-        xlmin = int(xl-20)
-        ylmin = int(yl-20)
-        xlmax = int(xl+20)
-        ylmax = int(yl+20)
-        #draw boudning box on left eye
-        cv2.rectangle(image, (xlmin, ylmin), (xlmax, ylmax), (0,55,255), 2)
-        #get left eye image
-        left_eye =  image[ylmin:ylmax, xlmin:xlmax]
+        xleft_min,yleft_min,xleft_max,yleft_max = int(xl-10),int(yl-10),int(xl+10),int(yl+10)
         
-        # make box for right eye 
-        xrmin = int(xr-20)
-        yrmin = int(yr-20)
-        xrmax = int(xr+20)
-        yrmax = int(yr+20)
-        #draw boinding box on right eye
-        cv2.rectangle(image, (xrmin, yrmin), (xrmax, yrmax), (0,55,255), 2)
-        #get righ eye image
-        right_eye = image[yrmin:yrmax, xrmin:xrmax]
+        cv2.rectangle(image, (xleft_min, yleft_min), (xleft_max, yleft_max), (0,55,255), 2) #drawing bounding box
+        
+        l_eye =  image[yleft_min:yleft_max, xleft_min:xleft_max]
+        
+        # right eye processing
+        xright_min,yright_min,xright_max,yright_max = int(xr-10),int(yr-10),int(xr+10),int(yr+10)
+        
+        cv2.rectangle(image, (xright_min, yright_min), (xright_max, yright_max), (0,55,255), 2) #drawing bounding box
+        
+        r_eye = image[yright_min:yright_max, xright_min:xright_max]
 
-        return left_eye, right_eye
-
+        return image,l_eye, r_eye
+        
     def check_model(self, core):
         # Add a CPU extension, if applicable
         if self.extensions and "CPU" in self.device:
