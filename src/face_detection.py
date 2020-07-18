@@ -49,14 +49,6 @@ class face_det_Model:
         """
         Draws outputs or predictions on image.
 
-        Args:
-            coords: The coordinates of predictions.
-            image: The image on which boxes need to be drawn.
-
-        Returns:
-            the frame
-            the count of people
-            bounding boxes above threshold
         """
 
         width = image.shape[1]
@@ -82,19 +74,14 @@ class face_det_Model:
         TODO: You will need to complete this method.
         This method is meant for running predictions on the input image.
         '''
-        processed_image = self.preprocess_input(image)
+        p_frame = self.preprocess_input(image)
         # Start asynchronous inference for specified request
-        cropped_image = image
-        net.start_async(request_id=0, inputs={self.input_name: processed_image})
-        # Wait for the result
-        if net.requests[0].wait(-1) == 0:
-            # get out put
-            outputs = net.requests[0].outputs[self.output_name]
-            coords = self.preprocess_output(outputs)
-            bounding_box, image = self.draw_outputs(coords, image)
-            bounding_box = bounding_box[0]
-            cropped_image = image[bounding_box[1]:bounding_box[3], bounding_box[0]:bounding_box[2]]
-        return cropped_image
+        result= self.net.infer(inputs={self.input_name:p_frame})
+        outputs = result[self.output_name]
+        coords = self.preprocess_output(outputs)
+        b_box, image = self.draw_outputs(coords, image)
+        cropd_face = image[b_box[1]:b_box[3], b_box[0]:b_box[2]]
+        return cropd_face, b_box
 
 
 

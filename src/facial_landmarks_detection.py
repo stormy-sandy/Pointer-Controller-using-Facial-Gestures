@@ -28,13 +28,13 @@ class Facial_Landmarks_Detection_Model:
         self.output_shape=self.model.outputs[self.output_name].shape
 
     def load_model(self):
-        global net
-        #load the model using IECore()
-        core = IECore()
-        self.check_model(core)
-        net = core.load_network(network=self.model, device_name=self.device, num_requests=1)
         
-        return net
+        #load the model using IECore()
+        self.core = IECore()
+        
+        self.net = core.load_network(network=self.model, device_name=self.device, num_requests=1)
+        
+        
 
     def predict(self, image):
         
@@ -99,11 +99,8 @@ class Facial_Landmarks_Detection_Model:
 
     def preprocess_input(self, image):
         #Get Input shape 
-        n, c, h, w = self.model.inputs[self.input_name].shape
-
-        #Pre-process the image ###
-        image = cv2.resize(image, (w, h))
-        image = image.transpose((2, 0, 1))
-        image = image.reshape((n, c, h, w))
+        p_frame = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
+        p_frame = p_frame.transpose((2,0,1))
+        p_frame = p_frame.reshape(1, *p_frame.shape)
         
-        return image
+        return p_frame

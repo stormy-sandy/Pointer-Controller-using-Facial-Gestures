@@ -31,13 +31,13 @@ def build_argparser():
     :return: command line arguments
     """
     parser = ArgumentParser()
-    parser.add_argument("-fdm", "--fdmodel", required=True, type=str,
+    parser.add_argument("-fd", "--fdmodel", required=True, type=str,
                         help="Path to a face detection xml file with a trained model.")
-    parser.add_argument("-hpm", "--hpmodel", required=True, type=str,
+    parser.add_argument("-hpd", "--hpdmodel", required=True, type=str,
                         help="Path to a head pose estimation xml file with a trained model.")
-    parser.add_argument("-lmm", "--lmmodel", required=True, type=str,
+    parser.add_argument("-lmd", "--lmdmodel", required=True, type=str,
                         help="Path to a facial landmarks xml file with a trained model.")
-    parser.add_argument("-gem", "--gemodel", required=True, type=str,
+    parser.add_argument("-ge", "--gemodel", required=True, type=str,
                         help="Path to a gaze estimation xml file with a trained model.")
     parser.add_argument("-i", "--input", required=True, type=str,
                         help="Path video file or CAM to use camera")
@@ -87,27 +87,27 @@ def infer_on_stream(args):
         # Initialise the class
         mc = MouseController("low","fast")
         #mc.move(100,100)
-        fdnet = FaceDetectionModel(args.fdmodel)
-        lmnet = FacialLandMarksDetectionModel(args.lmmodel)
-        hpnet = HeadPoseEstimationModel(args.hpmodel)
-        genet = GazeEstimationModel(args.gemodel)
+        fd = face_det_Model(args.fdmodel)
+        lmd = Facial_Landmarks_Detection_Model(args.lmdmodel)
+        hpd = Head_pose_Model(args.hpdmodel)
+        ge = Gaze_est_Model(args.gemodel)
 
         ### Load the model through ###
         logging.info("============== Models Load time ===============") 
         start_time = time.time()
-        fdnet.load_model()
+        fd.load_model()
         logging.info("Face Detection Model: {:.1f}ms".format(1000 * (time.time() - start_time)) )
 
         start_time = time.time()
-        lmnet.load_model()
+        lmd.load_model()
         logging.info("Facial Landmarks Detection Model: {:.1f}ms".format(1000 * (time.time() - start_time)) )
 
         start_time = time.time()
-        hpnet.load_model()
+        hpd.load_model()
         logging.info("Headpose Estimation Model: {:.1f}ms".format(1000 * (time.time() - start_time)) )
 
         start_time = time.time()
-        genet.load_model()
+        ge.load_model()
         logging.info("Gaze Estimation Model: {:.1f}ms".format(1000 * (time.time() - start_time)) )
         logging.info("==============  End =====================") 
         # Get and open video capture
@@ -136,26 +136,24 @@ def infer_on_stream(args):
 
             key_pressed = cv2.waitKey(60)
             frame_count += 1
-            #print(int((frame_count) % int(FPS)))
-            
+                      
             # face detection
-            p_frame = fdnet.preprocess_input(frame)
-            start_time = time.time()
-            fnoutput = fdnet.predict(p_frame)
-            fd_infertime += time.time() - start_time
-            out_frame,fboxes = fdnet.preprocess_output(fnoutput,frame,args.print)
+            
+            face_frame,bboxes = fd.predict(frame) #cropped face with bounding box co-ords
+            
+            
             
             #for each face
-            for fbox in fboxes:
+            for fbox in bboxes:
                 
-                # fbox = (xmin,ymin,xmax,ymax)
+                
                 # get face landmarks
                 # crop face from frame
                 face = frame[fbox[1]:fbox[3],fbox[0]:fbox[2]]
-                p_frame = lmnet.preprocess_input(face)
+                p_frame = lmd.preprocess_input(face)
                 
                 start_time = time.time()
-                lmoutput = lmnet.predict(p_frame)
+                lmoutput = lmd.predict(p_frame)
                 lm_infertime += time.time() - start_time
                 out_frame,left_eye_point,right_eye_point = lmnet.preprocess_output(lmoutput, fbox, out_frame,args.print)
 
