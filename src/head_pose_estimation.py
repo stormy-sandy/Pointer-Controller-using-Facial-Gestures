@@ -48,53 +48,20 @@ class Head_pose_Model:
     def draw_outputs(self,coords, image):
         """
         Draws outputs or predictions on image.
-
-        Args:
-            coords: The coordinates of predictions.
-            image: The image on which boxes need to be drawn.
-
-        Returns:
-            the frame
-            the count of people
-            bounding boxes above threshold
         """
-
-        width = image.shape[1]
-        height = image.shape[0]
-        box=[]
-        for ob in coords:
-                # Draw bounding box for object when it's probability is more than
-                #  the specified threshold
-                
-                box_side_1=(int(ob[0] * width),int(ob[1] * height))
-                    
-                box_side_2=(int(ob[2] * width),int(ob[2] * height))
-                    # Write out the frame
-                    
-                    
-                cv2.rectangle(image, box_side_1,box_side_2, (0, 55, 255), 1)
-                box.append([box_side_1[0], box_side_1[1], box_side_2[0], box_side_2[1]])
-                
-        return box, image
 
     def predict(self, image):
         '''
         TODO: You will need to complete this method.
         This method is meant for running predictions on the input image.
         '''
-        processed_image = self.preprocess_input(image)
-        # Start asynchronous inference for specified request
-        cropped_image = image
-        net.start_async(request_id=0, inputs={self.input_name: processed_image})
-        # Wait for the result
-        if net.requests[0].wait(-1) == 0:
-            # get out put
-            outputs = net.requests[0].outputs[self.output_name]
-            coords = self.preprocess_output(outputs)
-            bounding_box, image = self.draw_outputs(coords, image)
-            bounding_box = bounding_box[0]
-            cropped_image = image[bounding_box[1]:bounding_box[3], bounding_box[0]:bounding_box[2]]
-        return cropped_image
+        p_frame = self.preprocess_input(image)
+        #getting result by inference
+        result= self.net.infer(inputs={self.input_name:p_frame})
+
+        pitch , roll , yaw = result['angle_p_fc'].result['angle_r_fc'],result['angle_y_fc']
+        
+            
 
 
 
