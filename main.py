@@ -61,143 +61,92 @@ def build_argparser():
     parser.add_argument("--no_move",default=False,
                         help="Not move mouse based on gaze estimation output",action="store_true")
     
-    parser.add_argument("--no_video",default=False,
+    parser.add_argument("-v","--video",default=False,
                         help="Don't show video window",action="store_true")
 
     return parser
 
 
 def infer_on_stream(args):
-    """
-    Initialize the inference network, stream video to network,
-    and output stats and video.
-    :param args: Command line arguments parsed by `build_argparser()`
-    :return: None
-    """
+    fmodel = args.fdmodel
+    flmodel = args.lmdmodel
+    hmodel = args.hpdmodel
+    gmodel = args.gemodel
+    device = args.device
+    video_file = args.video
+    face_detect = args.FD
+    eye_detect = args.ED
+    gaze_v = args.GD
+    head = args.HD 
+    threshold = 0.6
+
+    start_model_load_time = time.time()
+
+    #initailizing models
+    
+    face_model = face(fmodel, face_detect, device, threshold)
+    facial_landmarks = facial(flmodel,eye_detect, device, threshold)
+    head_pose_est = head_pose(hmodel,head, device, threshold)
+    gaze_est = gaze(gmodel, gaze_v, device, threshold)
+
+    # Loading models
+
+    face_model.load_model()
+    facial_landmarks.load_model()
+    head_pose_est.load_model()
+    gaze_est.load_model()
+    total_model_load_time = time.time() - start_model_load_time
+
+    if video_file != "cam":
+        vtype = 'video'
+    else:
+        vtype = 'cam'
+
+    counter = 0
+    start_inference_time = time.time()
+        
     try:
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s [%(levelname)s] %(message)s",
-            handlers=[
-                logging.FileHandler("gaze-app.log"),
-                logging.StreamHandler()
-            ])
-        
-
-        # Initialise the class
-        mc = MouseController("low","fast")
-        #mc.move(100,100)
-        fd = face_det_Model(args.fdmodel)
-        lmd = Facial_Landmarks_Detection_Model(args.lmdmodel)
-        hpd = Head_pose_Model(args.hpdmodel)
-        ge = Gaze_est_Model(args.gemodel)
-
-        ### Load the model through ###
-        logging.info("============== Models Load time ===============") 
-        start_time = time.time()
-        fd.load_model()
-        logging.info("Face Detection Model: {:.1f}ms".format(1000 * (time.time() - start_time)) )
-
-        start_time = time.time()
-        lmd.load_model()
-        logging.info("Facial Landmarks Detection Model: {:.1f}ms".format(1000 * (time.time() - start_time)) )
-
-        start_time = time.time()
-        hpd.load_model()
-        logging.info("Headpose Estimation Model: {:.1f}ms".format(1000 * (time.time() - start_time)) )
-
-        start_time = time.time()
-        ge.load_model()
-        logging.info("Gaze Estimation Model: {:.1f}ms".format(1000 * (time.time() - start_time)) )
-        logging.info("==============  End =====================") 
-        # Get and open video capture
-        feeder = InputFeeder('video', args.input)
-        feeder.load_data()
-        # FPS = feeder.get_fps()
-
-        # Grab the shape of the input 
-        # width = feeder.get_width()
-        # height = feeder.get_height()
-
-        # init scene variables
-        frame_count = 0
-
-        ### Loop until stream is over ###
-        fd_infertime = 0
-        lmd_infertime = 0
-        hpd_infertime = 0
-        ge_infertime = 0
-        while True:
-            # Read the next frame
-            try:
-                frame = next(feeder.next_batch())
-            except StopIteration:
+        feed=InputFeeder(input_type = vtype, input_file = video_file)
+        feed.load_data()
+        for batch in feed.next_batch():
+            if batch is None:
+                log.error('The input frame is not being read, The file is corrupted')
+                exit()
+            counter += 1
+            frame,face_crop,detections = face_model.predict(batch)
+            limg,rimg = facial_landmarks.predict(face_crop)
+            angles,frame = head_pose_est.predict(face_crop,detections,frame)
+            x,y = gaze_est.predict(limg,rimg,angles)
+            
+            if eye_detect == "eye_detect":
+                cv2.imshow('frame', face_crop)
+            elif head == "head_pose":
+                cv2.imshow('frame',frame) 
+            else:
+                cv2.imshow('frame',frame)
+                        
+            if vtype != 'video':
+                t=1
+            else:
+                t=500
+                
+            if cv2.waitKey(t) & 0xFF == ord('q'):
                 break
-
-            key_pressed = cv2.waitKey(60)
-            frame_count += 1
-                      
-            # face detection
-            
-            face_frame,bboxes = fd.predict(frame) #cropped face with bounding box co-ords
-            
-            
-            
-            #for each face
-            for fbox in bboxes:
+            mouse = MouseController('low','fast')
+            mouse.move(x,y)
                 
-                
-                # get face landmarks
-                # crop face from frame
-                face = frame[fbox[1]:fbox[3],fbox[0]:fbox[2]]
-                p_frame = lmd.preprocess_input(face)
-                
-                start_time = time.time()
-                out_frame,left_eye_point,right_eye_point = lmd.predict(p_frame)
-                lmd_infertime += time.time() - start_time
-
-                # get head pose estimation
-                p_frame  = hpnet.preprocess_input(face)
-                start_time = time.time()
-                hpoutput = hpnet.predict(p_frame)
-                hp_infertime += time.time() - start_time
-                out_frame, headpose_angels = hpnet.preprocess_output(hpoutput,out_frame, face,fbox,args.print)
-
-                # get gaze  estimation
-                out_frame, left_eye, right_eye  = genet.preprocess_input(out_frame,face,left_eye_point,right_eye_point,args.print)
-                start_time = time.time()
-                geoutput = genet.predict(left_eye, right_eye, headpose_angels)
-                ge_infertime += time.time() - start_time
-                out_frame, gazevector = genet.preprocess_output(geoutput,out_frame,fbox, left_eye_point,right_eye_point,args.print)
-
-                if(not args.no_video):
-                    cv2.imshow('im', out_frame)
-                
-                if(not args.no_move):
-                    mc.move(gazevector[0],gazevector[1])
-                
-                #consider only first detected face in the frame
-                break
-            
-            # Break if escape key pressed
-            if key_pressed == 27:
-                break
-
-        #logging inference times
-        if(frame_count>0):
-            logging.info("============== Models Inference time ===============") 
-            logging.info("Face Detection:{:.1f}ms".format(1000* fd_infertime/frame_count))
-            logging.info("Facial Landmarks Detection:{:.1f}ms".format(1000* lm_infertime/frame_count))
-            logging.info("Headpose Estimation:{:.1f}ms".format(1000* hp_infertime/frame_count))
-            logging.info("Gaze Estimation:{:.1f}ms".format(1000* ge_infertime/frame_count))
-            logging.info("============== End ===============================") 
-
-        # Release the capture and destroy any OpenCV windows
-        feeder.close()
+        feed.close()
         cv2.destroyAllWindows()
-    except Exception as ex:
-        logging.exception("Error in inference:" + str(ex))
-        
+
+        total_time = time.time() - start_inference_time
+        total_inference_time = round(total_time, 1)
+        fps = counter / total_inference_time
+
+        print("The total time to load all the models is :"+str(total_model_load_time)+"sec")
+        print("The total inference time of the models is :"+str(total_inference_time)+"sec")
+        print("The total number of frames per second is :"+str(fps)+"fps")
+
+    
 
 def main():
     """

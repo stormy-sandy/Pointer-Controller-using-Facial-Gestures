@@ -45,38 +45,24 @@ class Gaze_est_Model:
         self.core = IECore()
         self.net = self.core.load_network(network=self.model, device_name=self.device, num_requests=1)
 
-    def draw_outputs(self, image):
-        """
-        Draws outputs or predictions on image.
-
-        Args:
-            coords: The coordinates of predictions.
-            image: The image on which boxes need to be drawn.
-
-        Returns:
-            the frame
-            
-            bounding boxes above threshold
-        """
         
-    def predict(self, image):
+    def predict(self, left_eye,right_eye,h_pose_angles):
         '''
         TODO: You will need to complete this method.
         This method is meant for running predictions on the input image.
         '''
-        processed_image = self.preprocess_input(image)
-        # Start asynchronous inference for specified request
-        cropped_image = image
-        net.start_async(request_id=0, inputs={self.input_name: processed_image})
-        # Wait for the result
-        if net.requests[0].wait(-1) == 0:
-            # get out put
-            outputs = net.requests[0].outputs[self.output_name]
-            coords = self.preprocess_output(outputs)
-            bounding_box, image = self.draw_outputs(coords, image)
-            bounding_box = bounding_box[0]
-            cropped_image = image[bounding_box[1]:bounding_box[3], bounding_box[0]:bounding_box[2]]
-        return cropped_image
+        r_frame=self.preprocess_input(right_eye)
+        l_frame=self.preprocess_input(left_eye)
+        results= self.net.infer(inputs={"head_pose_angles": h_pose_angles,
+                                        "left_eye_image":   l_frame,
+                                        "right_eye_image":  r_frame})
+
+
+        x,y = results['gaze_vector'][0][0],results['gaze_vector'][0][1]
+
+        if self.gaze == "gaze_vector":
+            print(results)
+        return x,y
 
 
 
@@ -106,7 +92,7 @@ class Gaze_est_Model:
         '''
         input_img = image
 
-        p_frame = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
+        p_frame = cv2.resize(image, (60,60)
         p_frame = p_frame.transpose((2,0,1))
         p_frame = p_frame.reshape(1, *p_frame.shape)
         
