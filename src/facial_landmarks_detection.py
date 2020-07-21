@@ -32,7 +32,7 @@ class Facial_Landmarks_Detection_Model:
         #load the model using IECore()
         self.core = IECore()
         
-        self.net = core.load_network(network=self.model, device_name=self.device, num_requests=1)
+        self.net = self.core.load_network(network=self.model, device_name=self.device, num_requests=1)
         
         
 

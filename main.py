@@ -1,3 +1,8 @@
+"""
+Type following in commandline to execute
+python main.py  -fd "Models\face-detection-adas-binary-0001\FP32-INT1\face-detection-adas-binary-0001" -ge "Models\gaze-estimation-adas-0002\FP32\gaze-estimation-adas-0002" -hpd "Models\head-pose-estimation-adas-0001\FP32\head-pose-estimation-adas-0001" -lmd "Models\landmarks-regression-retail-0009\FP32\landmarks-regression-retail-0009" -i "bin\demo.mp4" -d CPU -pt 0.6 -m_prec "fast" -m_speed "high"
+
+"""
 import os
 import sys
 import time
@@ -9,7 +14,7 @@ import sys
 import numpy as np
 
 from argparse import ArgumentParser
-from input_feeder import InputFeeder
+from src.input_feeder import InputFeeder
 
 
 from random import randint
@@ -64,6 +69,7 @@ def build_argparser():
     parser.add_argument("-m_speed", "--mouse_speed", type=str, default='immediate',
                         help="(Optional) Specify mouse speed (how many secs before it moves): 'immediate'(0s), 'fast'(0.1s),"
                              "'medium'(0.5s) and 'slow'(1s). Default is immediate.")
+    
 
     return parser
 
@@ -74,17 +80,13 @@ def infer_on_stream(args):
     hmodel = args.hpdmodel
     gmodel = args.gemodel
     device = args.device
-    video_file = args.video
-    threshold = 0.6
-
-    
-
-    #initailizing models
-    
-    face_model = face(fmodel, face_detect, device, threshold)
-    facial_landmarks = facial(flmodel,eye_detect, device, threshold)
-    head_pose_est = head_pose(hmodel,head, device, threshold)
-    gaze_est = gaze(gmodel, device, threshold)
+    input=args.input
+    threshold = args.prob_threshold
+    #initializing models
+    face_model = face_det_Model(fmodel, device, threshold)
+    facial_landmarks = Facial_Landmarks_Detection_Model(flmodel, device, threshold)
+    head_pose_est = Head_pose_Model(hmodel,device, threshold)
+    gaze_est = Gaze_est_Model(gmodel, device, threshold)
 
     # Loading models
 
@@ -94,7 +96,7 @@ def infer_on_stream(args):
     gaze_est.load_model()
     
 
-    if video_file != "cam":
+    if input != "cam":
         input_type = 'video'
     else:
         input_type = 'cam'
@@ -103,11 +105,11 @@ def infer_on_stream(args):
     
         
     try:
-        feed=InputFeeder(input_type = vtype, input_file = video_file)
+        feed=InputFeeder(input_type = "video", input_file = input)
         feed.load_data()
         for batch in feed.next_batch():
             if batch is None:
-                log.error('The input frame is not being read, The file is corrupted')
+                
                 exit()
             counter += 1
             frame,face_crop,detections = face_model.predict(batch)
@@ -134,26 +136,10 @@ def infer_on_stream(args):
                 
         feed.close()
         cv2.destroyAllWindows()
-        """
-        total_time = time.time() - start_inference_time
-        total_inference_time = round(total_time, 1)
-        fps = counter / total_inference_time
-
-        print("The total time to load all the models is :"+str(total_model_load_time)+"sec")
-        print("The total inference time of the models is :"+str(total_inference_time)+"sec")
-        print("The total number of frames per second is :"+str(fps)+"fps")
-        """
-
-    
+    except RuntimeError:
+        pass
 
 def main():
-    """
-    Load the network and parse the output.
-    :return: None
-    """
-
-
-
     # Grab command line args
     args = build_argparser().parse_args()
     # Perform inference on the input stream
