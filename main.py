@@ -55,14 +55,15 @@ def build_argparser():
                         help="Probability threshold for detections filtering"
                         "(0.5 by default)")
     
-    parser.add_argument("--print",default=False,
-                        help="Print models output on frame",action="store_true")
-    
-    parser.add_argument("--no_move",default=False,
-                        help="Not move mouse based on gaze estimation output",action="store_true")
-    
-    parser.add_argument("-v","--video",default=False,
-                        help="Don't show video window",action="store_true")
+    #parser.add_argument("-v","--video",default=False,
+     #                   help="Don't show video window",action="store_true")
+
+    parser.add_argument("-m_prec", "--mouse_precision", type=str, default='high',
+                        help="(Optional) Specify mouse precision (how much the mouse moves): 'high', 'medium', 'low'."
+                             "Default is high.")
+    parser.add_argument("-m_speed", "--mouse_speed", type=str, default='immediate',
+                        help="(Optional) Specify mouse speed (how many secs before it moves): 'immediate'(0s), 'fast'(0.1s),"
+                             "'medium'(0.5s) and 'slow'(1s). Default is immediate.")
 
     return parser
 
@@ -74,20 +75,16 @@ def infer_on_stream(args):
     gmodel = args.gemodel
     device = args.device
     video_file = args.video
-    face_detect = args.FD
-    eye_detect = args.ED
-    gaze_v = args.GD
-    head = args.HD 
     threshold = 0.6
 
-    start_model_load_time = time.time()
+    
 
     #initailizing models
     
     face_model = face(fmodel, face_detect, device, threshold)
     facial_landmarks = facial(flmodel,eye_detect, device, threshold)
     head_pose_est = head_pose(hmodel,head, device, threshold)
-    gaze_est = gaze(gmodel, gaze_v, device, threshold)
+    gaze_est = gaze(gmodel, device, threshold)
 
     # Loading models
 
@@ -95,15 +92,15 @@ def infer_on_stream(args):
     facial_landmarks.load_model()
     head_pose_est.load_model()
     gaze_est.load_model()
-    total_model_load_time = time.time() - start_model_load_time
+    
 
     if video_file != "cam":
-        vtype = 'video'
+        input_type = 'video'
     else:
-        vtype = 'cam'
+        input_type = 'cam'
 
     counter = 0
-    start_inference_time = time.time()
+    
         
     try:
         feed=InputFeeder(input_type = vtype, input_file = video_file)
@@ -132,12 +129,12 @@ def infer_on_stream(args):
                 
             if cv2.waitKey(t) & 0xFF == ord('q'):
                 break
-            mouse = MouseController('low','fast')
+            mouse = MouseController(args.mouse_precision ,args.mouse_speed)
             mouse.move(x,y)
                 
         feed.close()
         cv2.destroyAllWindows()
-
+        """
         total_time = time.time() - start_inference_time
         total_inference_time = round(total_time, 1)
         fps = counter / total_inference_time
@@ -145,6 +142,7 @@ def infer_on_stream(args):
         print("The total time to load all the models is :"+str(total_model_load_time)+"sec")
         print("The total inference time of the models is :"+str(total_inference_time)+"sec")
         print("The total number of frames per second is :"+str(fps)+"fps")
+        """
 
     
 
