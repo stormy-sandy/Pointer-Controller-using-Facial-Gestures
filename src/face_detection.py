@@ -1,9 +1,3 @@
-'''
-This is a sample class for a model. You may choose to use it as-is or make any changes to it.
-This has been provided just to give you an idea of how to structure your model class.
-'''
-
-
 import numpy as np
 import time
 from openvino.inference_engine import IENetwork, IECore
@@ -16,21 +10,22 @@ class face_det_Model:
     '''
     Class for the Face Detection Model.
     '''
-    def __init__(self, model_name, device='CPU', extensions=None, threshold=None):
+    def __init__(self, model_name, device='CPU', extensions=None, threshold=0.6):
         self.model_weights = model_name + '.bin'
         self.model_structure = model_name + '.xml'
         self.device = device
         self.threshold = threshold
 
         try:
-            self.model = IENetwork(self.model_structure, self.model_weights)
+            self.core = IECore()
+            self.model = self.core.read_network(self.model_structure, self.model_weights)
         except Exception as e:
             raise ValueError("Could not Initialise the network. Have you enterred the correct model path?")
 
-        self.input_name = next(iter(self.model.inputs))
-        self.input_shape = self.model.inputs[self.input_name].shape
-        self.output_name = next(iter(self.model.outputs))
-        self.output_shape = self.model.outputs[self.output_name].shape
+        self.input_name=next(iter(self.model.inputs))
+        self.input_shape=self.model.inputs[self.input_name].shape
+        self.output_name=next(iter(self.model.outputs))
+        self.output_shape=self.model.outputs[self.output_name].shape
         '''
         TODO: Use this to set your instance variables.
         '''
@@ -42,7 +37,6 @@ class face_det_Model:
         This method is for loading the model to the device specified by the user.
         If your model requires any Plugins, this is where you can load them.
         '''
-        self.core = IECore()
         self.net = self.core.load_network(network=self.model, device_name=self.device, num_requests=1)
 
     def draw_outputs(self,coords, image):
@@ -75,11 +69,10 @@ class face_det_Model:
         This method is meant for running predictions on the input image.
         '''
         p_frame = self.preprocess_input(image)
-        # Start asynchronous inference for specified request
-        result= self.net.infer(inputs={self.input_name:p_frame})
-        outputs = result[self.output_name]
-        coords = self.preprocess_output(outputs)
+        outputs = self.net.infer({self.input_name: p_frame})
+        coords = self.preprocess_output(outputs[self.output_name])
         b_box, image = self.draw_outputs(coords, image)
+        #print(b_box)
         cropd_face = image[b_box[1]:b_box[3], b_box[0]:b_box[2]]
         return cropd_face, b_box
 
@@ -124,6 +117,7 @@ class face_det_Model:
     '''
         cords = []
         for box in outputs[0][0]: # output.shape: 1x1xNx7
+            
             thresh = box[2]
             if thresh >= self.threshold:
                 xmin,ymin,xmax,ymax = box[3],box[4],box[5],box[6] 

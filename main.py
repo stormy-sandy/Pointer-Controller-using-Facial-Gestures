@@ -105,14 +105,14 @@ def infer_on_stream(args):
     
         
     try:
-        feed=InputFeeder(input_type = "video", input_file = input)
+        feed=InputFeeder(input_type = 'cam', input_file = input)
         feed.load_data()
         for batch in feed.next_batch():
             if batch is None:
                 
                 exit()
             counter += 1
-            frame,face_crop,detections = face_model.predict(batch)
+            frame,face_crop = face_model.predict(batch)
             limg,rimg = facial_landmarks.predict(face_crop)
             angles,frame = head_pose_est.predict(face_crop,detections,frame)
             x,y = gaze_est.predict(limg,rimg,angles)

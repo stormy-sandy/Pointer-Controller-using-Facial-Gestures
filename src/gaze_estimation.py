@@ -16,7 +16,7 @@ class Gaze_est_Model:
     '''
     Class for the Face Detection Model.
     '''
-    def __init__(self, model_name, device='CPU', extensions=None, threshold=None):
+    def __init__(self, model_name, device='CPU', extensions=None, threshold=0.5):
         self.model_weights = model_name + '.bin'
         self.model_structure = model_name + '.xml'
         self.device = device
