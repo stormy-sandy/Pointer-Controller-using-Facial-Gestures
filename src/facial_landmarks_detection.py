@@ -41,10 +41,9 @@ class Facial_Landmarks_Detection_Model:
         
         
         frame = self.preprocess_input(image)
-        outputs = self.exec_net.infer({self.input_name:img_processed})
-        output=outputs[0]
+        outputs = self.net.infer({self.input_name:frame})
 
-        l_eye, r_eye,out_image = self.draw_outputs(output, image)
+        l_eye, r_eye,out_image = self.draw_outputs(outputs, image)
             
         return out_image, l_eye, r_eye
     
@@ -88,8 +87,10 @@ class Facial_Landmarks_Detection_Model:
 
     def preprocess_input(self, image):
         #Get Input shape 
-        p_frame = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
-        p_frame = p_frame.transpose((2,0,1))
-        p_frame = p_frame.reshape(1, *p_frame.shape)
+        image=np.uint8(image)
+        #image_cvt = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_resized = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
+        img_processed = np.transpose(np.expand_dims(image_resized,axis=0), (0,3,1,2))
+        return img_processed
         
-        return p_frame
+        

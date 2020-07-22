@@ -105,7 +105,7 @@ def infer_on_stream(args):
     
         
     try:
-        feed=InputFeeder(input_type = 'cam', input_file = input)
+        feed=InputFeeder(input_type = 'video', input_file = input)
         feed.load_data()
         for batch in feed.next_batch():
             if batch is None:
