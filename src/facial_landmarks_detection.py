@@ -18,9 +18,10 @@ class Facial_Landmarks_Detection_Model:
         self.extensions = extensions
 
         try:
-            self.model=IENetwork(self.model_structure, self.model_weights)
+            self.core = IECore()
+            self.model = self.core.read_network(self.model_structure, self.model_weights)
         except Exception as e:
-            raise ValueError("Could not Initialise the network. Check if modeld path is correct")
+            raise ValueError("Could not Initialise the network. Have you enterred the correct model path?")
 
         self.input_name=next(iter(self.model.inputs))
         self.input_shape=self.model.inputs[self.input_name].shape
@@ -30,7 +31,7 @@ class Facial_Landmarks_Detection_Model:
     def load_model(self):
         
         #load the model using IECore()
-        self.core = IECore()
+        
         
         self.net = self.core.load_network(network=self.model, device_name=self.device, num_requests=1)
         
