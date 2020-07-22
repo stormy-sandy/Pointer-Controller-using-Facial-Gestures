@@ -48,20 +48,24 @@ class face_det_Model:
         width = image.shape[1]
         height = image.shape[0]
         box=[]
+        crop_face=[]
         for ob in coords:
-                # Draw bounding box for object when it's probability is more than
-                #  the specified threshold
+                # Draw bounding box for object 
                 
-                box_side_1=(int(ob[0] * width),int(ob[1] * height))
+                xmin=int(ob[0] * width)
+                ymin=int(ob[1] * height)
+
                     
-                box_side_2=(int(ob[2] * width),int(ob[2] * height))
+                xmax=int(ob[2] * width)
+                ymax=int(ob[3] * height)
                     # Write out the frame
-                    
-                    
-                cv2.rectangle(image, box_side_1,box_side_2, (0, 55, 255), 1)
-                box.append([box_side_1[0], box_side_1[1], box_side_2[0], box_side_2[1]])
+                cv2.rectangle(image, (xmin,ymin),(xmax,ymax), (0, 55, 255), 1)
+
+                box.append((xmin,ymin,xmax,ymax))
+                crop_face=image[ymin:ymax,xmin:xmax]
+
                 
-        return box, image
+        return box,crop_face
 
     def predict(self, image):
         '''
@@ -71,9 +75,10 @@ class face_det_Model:
         p_frame = self.preprocess_input(image)
         outputs = self.net.infer({self.input_name: p_frame})
         coords = self.preprocess_output(outputs[self.output_name])
-        b_box, image = self.draw_outputs(coords, image)
+        b_box,cropd_face= self.draw_outputs(coords, image)
         #print(b_box)
-        cropd_face = image[b_box[1]:b_box[3], b_box[0]:b_box[2]]
+        #cropd_face = image[b_box[1]::b_box[3], b_box[0]:b_box[2]]
+        
         return cropd_face, b_box
 
 
@@ -120,8 +125,8 @@ class face_det_Model:
             
             thresh = box[2]
             if thresh >= self.threshold:
-                xmin,ymin,xmax,ymax = box[3],box[4],box[5],box[6] 
-                cords.append((xmin, ymin, xmax, ymax))
+                #xmin,ymin,xmax,ymax = box[3],box[4],box[5],box[6] 
+                cords.append(box[3:])
                 
                 
         return cords

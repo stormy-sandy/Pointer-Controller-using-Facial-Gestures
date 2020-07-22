@@ -8,10 +8,9 @@ import argparse
 import sys
 class face_det_Model:
     '''
-    Class for the Person Detection Model.
+    Class for the face Detection Model.
     '''
-
-    def __init__(self, model_name, device, threshold=0.60):
+    def __init__(self, model_name, device='CPU', threshold=0.60):
         self.model_weights=model_name+'.bin'
         self.model_structure=model_name+'.xml'
         self.device=device
