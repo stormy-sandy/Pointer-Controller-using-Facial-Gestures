@@ -90,7 +90,7 @@ class Facial_Landmarks_Detection_Model:
         p_frame=np.uint8(image)
         #image_cvt = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         p_frame = cv2.resize(p_frame, (self.input_shape[3], self.input_shape[2]))
-        p_frame = p_frame.transpose((2,0,1))
+        p_frame = p_frame.transpose(2,0,1)
         p_frame = p_frame.reshape(1, *p_frame.shape)
 
         return p_frame
