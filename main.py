@@ -1,68 +1,45 @@
-"""
-Type following in commandline to execute
-python main.py  -fd "Models\face-detection-adas-binary-0001\FP32-INT1\face-detection-adas-binary-0001" -ge "Models\gaze-estimation-adas-0002\FP32\gaze-estimation-adas-0002" -hpd "Models\head-pose-estimation-adas-0001\FP32\head-pose-estimation-adas-0001" -lmd "Models\landmarks-regression-retail-0009\FP32\landmarks-regression-retail-0009" -i "bin\demo.mp4" -d CPU -pt 0.6 -m_prec "fast" -m_speed "high"
-
-"""
-import os
-import sys
-import time
-import socket
-import json
 import cv2
+import os
 import logging
-import sys
 import numpy as np
-
+from src.face_detection import FaceDetectionModel
+from src.facial_landmarks_detection import FacialLandmarksDetectionModel
+from src.gaze_estimation import GazeEstimationModel
+from src.head_pose_estimation import HeadPoseEstimationModel
+from src.mouse_controller import MouseController
 from argparse import ArgumentParser
 from src.input_feeder import InputFeeder
 
-
-from random import randint
-from inference import Network
-
-from src.face_detection import face_det_Model
-from src.facial_landmarks_detection import Facial_Landmarks_Detection_Model
-from src.head_pose_estimation import Head_pose_Model
-from src.gaze_estimation import Gaze_est_Model 
-from src.mouse_controller import MouseController
-
-#import _thread
-
-
-
 def build_argparser():
-    """
-    Parse command line arguments.
-    :return: command line arguments
-    """
-    parser = ArgumentParser()
-    parser.add_argument("-fd", "--fdmodel", required=True, type=str,
-                        help="Path to a face detection xml file with a trained model.")
-    parser.add_argument("-hpd", "--hpdmodel", required=True, type=str,
-                        help="Path to a head pose estimation xml file with a trained model.")
-    parser.add_argument("-lmd", "--lmdmodel", required=True, type=str,
-                        help="Path to a facial landmarks xml file with a trained model.")
-    parser.add_argument("-ge", "--gemodel", required=True, type=str,
-                        help="Path to a gaze estimation xml file with a trained model.")
-    parser.add_argument("-i", "--input", required=True, type=str,
-                        help="Path video file or CAM to use camera")
-    parser.add_argument("-l", "--cpu_extension", required=False, type=str,
-                        default=None,
-                        help="MKLDNN (CPU)-targeted custom layers."
-                             "Absolute path to a shared library with the"
-                             "kernels impl.")
-    parser.add_argument("-d", "--device", type=str, default="CPU",
-                        help="Specify the target device to infer on: "
-                             "CPU, GPU, FPGA or MYRIAD is acceptable. Sample "
-                             "will look for a suitable plugin for device "
-                             "specified (CPU by default)")
-    parser.add_argument("-pt", "--prob_threshold", type=float, default=0.5,
-                        help="Probability threshold for detections filtering"
-                        "(0.5 by default)")
-    
-    #parser.add_argument("-v","--video",default=False,
-     #                   help="Don't show video window",action="store_true")
+    #Parse command line arguments.
 
+    #:return: command line arguments
+    parser = ArgumentParser()
+    parser.add_argument("-fdm", "--face_detection_model", required=True, type=str,
+                        help="Specify Path to .xml file of Face Detection model.")
+    parser.add_argument("-fldm", "--facial_landmarks_detection_model", required=True, type=str,
+                        help="Specify Path to .xml file of Facial Landmarks Detection model.")
+    parser.add_argument("-hpem", "--head_pose_estimation_model", required=True, type=str,
+                        help="Specify Path to .xml file of Head Pose Estimation model.")
+    parser.add_argument("-gem", "--gaze_estimation_model", required=True, type=str,
+                        help="Specify Path to .xml file of Gaze Estimation model.")
+    parser.add_argument("-i", "--input", required=True, type=str,
+                        help="Specify Path to video file or enter cam for webcam")
+    parser.add_argument("-flags", "--visualization_flags", required=False, nargs='+',
+                        default=[],
+                        help="Specify the flags from fd, fld, hp, ge like --flags fd hp fld (Separate each flag by space)"
+                             "for seeing the visualization of different model outputs of each frame," 
+                             "fd for Face Detection, fld for Facial Landmark Detection"
+                             "hp for Head Pose Estimation, ge for Gaze Estimation." )
+    parser.add_argument("--cpu_extension", required=False, type=str,
+                        default=None,
+                        help="CPU Extension for custom layers")
+    parser.add_argument("--prob_threshold", required=False, type=float,
+                        default=0.6,
+                        help="Probability threshold to be used by the model.")
+    parser.add_argument("--device", type=str, default="CPU",
+                        help="Specify the target device to perform inference on: "
+                             "CPU, GPU, FPGA, or MYRIAD")
     parser.add_argument("-m_prec", "--mouse_precision", type=str, default='high',
                         help="(Optional) Specify mouse precision (how much the mouse moves): 'high', 'medium', 'low'."
                              "Default is high.")
@@ -70,81 +47,94 @@ def build_argparser():
                         help="(Optional) Specify mouse speed (how many secs before it moves): 'immediate'(0s), 'fast'(0.1s),"
                              "'medium'(0.5s) and 'slow'(1s). Default is immediate.")
     
-
     return parser
 
 
-def infer_on_stream(args):
-    fmodel = args.fdmodel
-    flmodel = args.lmdmodel
-    hmodel = args.hpdmodel
-    gmodel = args.gemodel
-    device = args.device
-    input=args.input
-    threshold = args.prob_threshold
-    #initializing models
-    face_model = face_det_Model(fmodel, device, threshold)
-    facial_landmarks = Facial_Landmarks_Detection_Model(flmodel, device, threshold)
-    head_pose_est = Head_pose_Model(hmodel,device, threshold)
-    gaze_est = Gaze_est_Model(gmodel, device, threshold)
-
-    # Loading models
-
-    face_model.load_model()
-    facial_landmarks.load_model()
-    head_pose_est.load_model()
-    gaze_est.load_model()
-    
-
-    if input != "cam":
-        input_type = 'video'
-    else:
-        input_type = 'cam'
-
-    counter = 0
-    
-        
-    try:
-        feed=InputFeeder(input_type = 'video', input_file = input)
-        feed.load_data()
-        for batch in feed.next_batch():
-            if batch is None:
-                
-                exit()
-            counter += 1
-            frame,face_crop = face_model.predict(batch)
-            limg,rimg = facial_landmarks.predict(face_crop)
-            angles,frame = head_pose_est.predict(face_crop,detections,frame)
-            x,y = gaze_est.predict(limg,rimg,angles)
-            
-            if eye_detect == "eye_detect":
-                cv2.imshow('frame', face_crop)
-            elif head == "head_pose":
-                cv2.imshow('frame',frame) 
-            else:
-                cv2.imshow('frame',frame)
-                        
-            if vtype != 'video':
-                t=1
-            else:
-                t=500
-                
-            if cv2.waitKey(t) & 0xFF == ord('q'):
-                break
-            mouse = MouseController(args.mouse_precision ,args.mouse_speed)
-            mouse.move(x,y)
-                
-        feed.close()
-        cv2.destroyAllWindows()
-    except RuntimeError:
-        pass
 
 def main():
-    # Grab command line args
+
+    # Grab command line arguments
     args = build_argparser().parse_args()
-    # Perform inference on the input stream
-    infer_on_stream(args)
+    flags = args.visualization_flags
+    
+    logger = logging.getLogger()
+    input_file_path = args.input
+    input_feeder = None
+    if input_file_path.lower() == "cam":
+            input_feeder = InputFeeder("cam")
+    else:
+        if not os.path.isfile(input_file_path):
+            logger.error("Unable to find specified video file")
+            exit(1)
+        input_feeder = InputFeeder("video", input_file_path)
+    
+    
+    
+    fdm = FaceDetectionModel(args.face_detection_model, args.device, args.cpu_extension)
+    fldm = FacialLandmarksDetectionModel(args.facial_landmarks_detection_model, args.device, args.cpu_extension)
+    gem = GazeEstimationModel(args.gaze_estimation_model, args.device, args.cpu_extension)
+    hpem = HeadPoseEstimationModel(args.head_pose_estimation_model, args.device, args.cpu_extension)
+    
+    mc = MouseController(precision=args.mouse_precision,speed=args.mouse_speed)
+    
+    input_feeder.load_data()
+    fdm.load_model()
+    fldm.load_model()
+    hpem.load_model()
+    gem.load_model()
+    
+    frame_count = 0
+    for ret, frame in input_feeder.next_batch():
+        if not ret:
+            break
+        frame_count+=1
+        if frame_count%5==0:
+            cv2.imshow('video', cv2.resize(frame, (500,500)))
+    
+        key = cv2.waitKey(60)
+        cropped_face, face_coords = fdm.predict(frame, args.prob_threshold)
+        if type(cropped_face)==int:
+            logger.error("Unable to detect the face.")
+            if key==27:
+                break
+            continue
+        
+        hp_output = hpem.predict(cropped_face)
+        
+        left_eye, right_eye, eye_coords = fldm.predict(cropped_face)
+        
+        new_mouse_coord, gaze_vector = gem.predict(left_eye, right_eye, hp_output)
+        
+        if (not len(flags)==0):
+            preview_frame = frame
+            if 'fd' in flags:
+                preview_frame = cropped_face
+            if 'fld' in flags:
+                cv2.rectangle(cropped_face, (eye_coords[0][0]-10, eye_coords[0][1]-10), (eye_coords[0][2]+10, eye_coords[0][3]+10), (0,255,0), 3)
+                cv2.rectangle(cropped_face, (eye_coords[1][0]-10, eye_coords[1][1]-10), (eye_coords[1][2]+10, eye_coords[1][3]+10), (0,255,0), 3)
+                
+            if 'hp' in flags:
+                cv2.putText(preview_frame, "Pose Angles: yaw:{:.2f} | pitch:{:.2f} | roll:{:.2f}".format(hp_output[0], hp_output[1], hp_output[2]), (10, 20), cv2.FONT_HERSHEY_COMPLEX, 0.25, (0, 255, 0), 1)
+            if 'ge' in flags:
+                x, y, w = int(gaze_vector[0]*12), int(gaze_vector[1]*12), 160
+                le = cv2.line(left_eye, (x-w, y-w), (x+w, y+w), (255,0,255), 2)
+                cv2.line(le, (x-w, y+w), (x+w, y-w), (255,0,255), 2)
+                re = cv2.line(right_eye, (x-w, y-w), (x+w, y+w), (255,0,255), 2)
+                cv2.line(re, (x-w, y+w), (x+w, y-w), (255,0,255), 2)
+                cropped_face[eye_coords[0][1]:eye_coords[0][3],eye_coords[0][0]:eye_coords[0][2]] = le
+                cropped_face[eye_coords[1][1]:eye_coords[1][3],eye_coords[1][0]:eye_coords[1][2]] = re
+                
+            cv2.imshow("Preview", cv2.resize(preview_frame,(500,500)))
+        
+        if frame_count%5==0:
+            mc.move(new_mouse_coord[0], new_mouse_coord[1])    
+        if key==27:
+                break
+    logger.error("Stream Over")
+    cv2.destroyAllWindows()
+    input_feeder.close()
+     
     
 
 if __name__ == '__main__':
-    main()
+    main() 

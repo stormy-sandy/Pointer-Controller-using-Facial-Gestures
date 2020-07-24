@@ -1,20 +1,25 @@
-import numpy as np
-import time
-from openvino.inference_engine import IENetwork, IECore
-
-import os
 import cv2
-import argparse
-import sys
-class face_det_Model:
+import numpy as np
+from openvino.inference_engine import IECore, IENetwork
+
+
+'''
+This is a sample class for a model. You may choose to use it as-is or make any changes to it.
+This has been provided just to give you an idea of how to structure your model class.
+'''
+
+class FaceDetectionModel:
     '''
     Class for the Face Detection Model.
     '''
-    def __init__(self, model_name, device='CPU', extensions=None, threshold=0.6):
+    def __init__(self, model_name, device='CPU', extensions=None):
+        '''
+        TODO: Use this to set your instance variables.
+        '''
         self.model_weights = model_name + '.bin'
         self.model_structure = model_name + '.xml'
         self.device = device
-        self.threshold = threshold
+        self.extensions = extensions
 
         try:
             self.core = IECore()
@@ -26,10 +31,6 @@ class face_det_Model:
         self.input_shape=self.model.inputs[self.input_name].shape
         self.output_name=next(iter(self.model.outputs))
         self.output_shape=self.model.outputs[self.output_name].shape
-        '''
-        TODO: Use this to set your instance variables.
-        '''
-
 
     def load_model(self):
         '''
@@ -39,95 +40,47 @@ class face_det_Model:
         '''
         self.net = self.core.load_network(network=self.model, device_name=self.device, num_requests=1)
 
-    def draw_outputs(self,coords, image):
-        """
-        Draws outputs or predictions on image.
-
-        """
-
-        width = image.shape[1]
-        height = image.shape[0]
-        box=[]
-        crop_face=[]
-        for ob in coords:
-                # Draw bounding box for object 
-                
-                xmin=int(ob[0] * width)
-                ymin=int(ob[1] * height)
-
-                    
-                xmax=int(ob[2] * width)
-                ymax=int(ob[3] * height)
-                    # Write out the frame
-                cv2.rectangle(image, (xmin,ymin),(xmax,ymax), (0, 55, 255), 1)
-
-                box.append((xmin,ymin,xmax,ymax))
-                crop_face=image[ymin:ymax,xmin:xmax]
-
-                
-        return box,crop_face
-
-    def predict(self, image):
+    def predict(self, image, prob_threshold):
         '''
         TODO: You will need to complete this method.
         This method is meant for running predictions on the input image.
         '''
-        p_frame = self.preprocess_input(image)
-        outputs = self.net.infer({self.input_name: p_frame})
-        coords = self.preprocess_output(outputs[self.output_name])
-        b_box,cropd_face= self.draw_outputs(coords, image)
-        #print(b_box)
-        #cropd_face = image[b_box[1]::b_box[3], b_box[0]:b_box[2]]
+        processed_img = self.preprocess_input(image)
+        outputs = self.net.infer({self.input_name:processed_img})
+        coords = self.preprocess_output(outputs, prob_threshold)
+        if (len(coords)==0):
+            return 0, 0
+        coords = coords[0] #take the first detected face
+        h=image.shape[0]
+        w=image.shape[1]
+        coords = coords* np.array([w, h, w, h])
+        coords = coords.astype(np.int32)
         
-        return cropd_face, b_box
+        detected_face = image[coords[1]:coords[3], coords[0]:coords[2]]
 
-
+        return detected_face, coords
 
     def check_model(self):
-
-        # Add a CPU extension, if applicable
-        if self.extensions and "CPU" in self.device:
-            core.add_extension(self.extensions, self.device)
-
-        ###: Check for supported layers ###
-        if "CPU" in self.device:
-            supported_layers = core.query_network(self.model, "CPU")
-            not_supported_layers = [l for l in self.model.layers.keys() if l not in supported_layers]
-            if len(not_supported_layers) != 0:
-                log.error("Following layers are not supported by the plugin for specified device {}:\n {}".
-                        format(self.device, ', '.join(not_supported_layers)))
-                log.error("Please try to specify cpu extensions library path in sample's command line parameters using -l "
-                        "or --cpu_extension command line argument")
-                sys.exit(1)
-
+        raise NotImplementedError
 
     def preprocess_input(self, image):
 
-        '''
-        Before feeding the data into the model for inference,
-        you might have to preprocess it. This function is where you can do that.
+        image_res = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
+        image_res = np.transpose(np.expand_dims(image_res, axis=0), (0,3,1,2))
 
-        '''
-        p_frame = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
-        p_frame = p_frame.transpose((2,0,1))
-        p_frame = p_frame.reshape(1, *p_frame.shape)
-        
-        return p_frame
+        return image_res
 
+    def preprocess_output(self, outputs, prob_threshold):
 
-    def preprocess_output(self, outputs):
-        '''
-    Before feeding the output of this model to the next model,
-    you might have to preprocess the output. This function is where you can do that.
-    '''
-        cords = []
-        for box in outputs[0][0]: # output.shape: 1x1xNx7
-            
-            thresh = box[2]
-            if thresh >= self.threshold:
-                #xmin,ymin,xmax,ymax = box[3],box[4],box[5],box[6] 
-                cords.append(box[3:])
+        coords =[]
+        outs = outputs[self.output_name][0][0]
+        for out in outs:
+            conf = out[2]
+            if conf>prob_threshold:
+                x_min=out[3]
+                y_min=out[4]
+                x_max=out[5]
+                y_max=out[6]
+                coords.append([x_min,y_min,x_max,y_max])
                 
-                
-        return cords
-
+        return coords

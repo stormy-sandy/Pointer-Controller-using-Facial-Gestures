@@ -1,20 +1,23 @@
-import numpy as np
-import time
-from openvino.inference_engine import IENetwork, IECore
-import os
 import cv2
-import argparse
-import sys
-import logging as log
+import numpy as np
+from openvino.inference_engine import IECore, IENetwork
 
-class Facial_Landmarks_Detection_Model:
+'''
+This is a sample class for a model. You may choose to use it as-is or make any changes to it.
+This has been provided just to give you an idea of how to structure your model class.
+'''
+
+class FacialLandmarksDetectionModel:
     '''
-    Class for the Facial Landmark Detection Model.
+    Class for the Face Detection Model.
     '''
     def __init__(self, model_name, device='CPU', extensions=None):
-        self.model_weights=model_name+'.bin'
-        self.model_structure=model_name+'.xml'
-        self.device=device
+        '''
+        TODO: Use this to set your instance variables.
+        '''
+        self.model_weights = model_name + '.bin'
+        self.model_structure = model_name + '.xml'
+        self.device = device
         self.extensions = extensions
 
         try:
@@ -28,71 +31,61 @@ class Facial_Landmarks_Detection_Model:
         self.output_name=next(iter(self.model.outputs))
         self.output_shape=self.model.outputs[self.output_name].shape
 
+
     def load_model(self):
-        
-        #load the model using IECore()
-        
-        
+        '''
+        TODO: You will need to complete this method.
+        This method is for loading the model to the device specified by the user.
+        If your model requires any Plugins, this is where you can load them.
+        '''
         self.net = self.core.load_network(network=self.model, device_name=self.device, num_requests=1)
-        
-        
+
 
     def predict(self, image):
+        '''
+        TODO: You will need to complete this method.
+        This method is meant for running predictions on the input image.
+        '''
+        processed_img = self.preprocess_input(image)
+        outputs = self.net.infer({self.input_name:processed_img})
+        coords = self.preprocess_output(outputs)
+        h=image.shape[0]
+        w=image.shape[1]
+        coords = coords* np.array([w, h, w, h])
+        coords = coords.astype(np.int32) #(lefteye_x, lefteye_y, righteye_x, righteye_y)
+        le_xmin=coords[0]-10
+        le_ymin=coords[1]-10
+        le_xmax=coords[0]+10
+        le_ymax=coords[1]+10
         
-        
-        frame = self.preprocess_input(image)
-        outputs = self.net.infer({self.input_name:frame})
+        re_xmin=coords[2]-10
+        re_ymin=coords[3]-10
+        re_xmax=coords[2]+10
+        re_ymax=coords[3]+10
 
-        l_eye, r_eye,out_image = self.draw_outputs(outputs, image)
-            
-        return out_image, l_eye, r_eye
-    
-    def draw_outputs(self, outputs, image):
-        #get image width and hight
-        h = image.shape[0]
-        w = image.shape[1]
-        #left eye processing
-        xl,yl,xr,yr, = outputs[0][0]*w,outputs[1][0]*h,outputs[2][0]*w,outputs[3][0]*h 
-        
-        xleft_min,yleft_min,xleft_max,yleft_max = int(xl-10),int(yl-10),int(xl+10),int(yl+10)
-        
-        cv2.rectangle(image, (xleft_min, yleft_min), (xleft_max, yleft_max), (0,55,255), 2) #drawing bounding box
-        
-        l_eye =  image[yleft_min:yleft_max, xleft_min:xleft_max]
-        
-        # right eye processing
-        xright_min,yright_min,xright_max,yright_max = int(xr-10),int(yr-10),int(xr+10),int(yr+10)
-        
-        cv2.rectangle(image, (xright_min, yright_min), (xright_max, yright_max), (0,55,255), 2) #drawing bounding box
-        
-        r_eye = image[yright_min:yright_max, xright_min:xright_max]
+        left_eye =  image[le_ymin:le_ymax, le_xmin:le_xmax]
+        right_eye = image[re_ymin:re_ymax, re_xmin:re_xmax]
+        eye_coords = [[le_xmin,le_ymin,le_xmax,le_ymax], [re_xmin,re_ymin,re_xmax,re_ymax]]
 
-        return image,l_eye, r_eye
-        
-    def check_model(self, core):
-        # Add a CPU extension, if applicable
-        if self.extensions and "CPU" in self.device:
-            core.add_extension(self.extensions, self.device)
+        return left_eye, right_eye, eye_coords
 
-        ###: Check for supported layers ###
-        if "CPU" in self.device:
-            supported_layers = core.query_network(self.model, "CPU")
-            not_supported_layers = [l for l in self.model.layers.keys() if l not in supported_layers]
-            if len(not_supported_layers) != 0:
-                log.error("Following layers are not supported by the plugin for specified device {}:\n {}".
-                        format(self.device, ', '.join(not_supported_layers)))
-                log.error("Please try to specify cpu extensions library path in sample's command line parameters using -l "
-                        "or --cpu_extension command line argument")
-                sys.exit(1)
+    def check_model(self):
+        raise NotImplementedError
 
     def preprocess_input(self, image):
-        #Get Input shape 
-        p_frame=np.uint8(image)
-        #image_cvt = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        p_frame = cv2.resize(p_frame, (self.input_shape[3], self.input_shape[2]))
-        p_frame = p_frame.transpose(2,0,1)
-        p_frame = p_frame.reshape(1, *p_frame.shape)
 
-        return p_frame
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image_res = cv2.resize(image_rgb, (self.input_shape[3], self.input_shape[2]))
+        image_res = np.transpose(np.expand_dims(image_res, axis=0), (0,3,1,2))
         
+        return image_res
+
+    def preprocess_output(self, outputs):
+
+        outs = outputs[self.output_name][0]
+        leye_x = outs[0].tolist()[0][0]
+        leye_y = outs[1].tolist()[0][0]
+        reye_x = outs[2].tolist()[0][0]
+        reye_y = outs[3].tolist()[0][0]
         
+        return (leye_x, leye_y, reye_x, reye_y)
