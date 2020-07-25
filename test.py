@@ -1,80 +1,66 @@
-import numpy as np
-import time
-from openvino.inference_engine import IENetwork, IECore
+from pysimplelog import Logger
 
-import os
-import cv2
-import argparse
-import sys
-class face_det_Model:
-    '''
-    Class for the face Detection Model.
-    '''
-    def __init__(self, model_name, device='CPU', threshold=0.60):
-        self.model_weights=model_name+'.bin'
-        self.model_structure=model_name+'.xml'
-        self.device=device
-        self.threshold=threshold
+# initialize
+l=Logger("log test")
 
-        try:
-            self.core = IECore()
-            self.model = self.core.read_network(self.model_structure, self.model_weights)
-        except Exception as e:
-            raise ValueError("Could not Initialise the network. Have you enterred the correct model path?")
+# change log file basename from simplelog to mylog
+l.set_log_file_basename("mylog")
 
-        self.input_name=next(iter(self.model.inputs))
-        self.input_shape=self.model.inputs[self.input_name].shape
-        self.output_name=next(iter(self.model.outputs))
-        self.output_shape=self.model.outputs[self.output_name].shape
+# change log file extension from .log to .pylog
+l.set_log_file_extension("pylog")
 
-    def load_model(self):
-        self.net = self.core.load_network(network=self.model, device_name=self.device, num_requests=1)
-        
-    def predict(self, image):
-        p_frame = self.preprocess_input(image)
-        outputs = self.net.infer({self.input_name: p_frame})
-        coords = self.preprocess_outputs(outputs[self.output_name])
-        self.draw_outputs(coords, image)
-        
-        post_image,post_coord=self.draw_outputs(coords, image)
-        return post_image,post_coord
-    
-    def draw_outputs(self, coords, image):
-        width = image.shape[1]
-        height = image.shape[0]
-        box=[]
-        for ob in coords:
-                # Draw bounding box for object when it's probability is more than
-                #  the specified threshold
-                
-                box_side_1=(int(ob[0] * width),int(ob[1] * height))
-                    
-                box_side_2=(int(ob[2] * width),int(ob[2] * height))
-                    # Write out the frame
-                    
-                    
-                cv2.rectangle(image, box_side_1,box_side_2, (0, 55, 255), 1)
-                box.append([box_side_1[0], box_side_1[1], box_side_2[0], box_side_2[1]])
-                
-        return box, image
-                
-                
-        
+# Add new log types.
+l.add_log_type("super critical", name="SUPER CRITICAL", level=200, color='red', attributes=["bold","underline"])
+l.add_log_type("wrong", name="info", color='magenta', attributes=["strike through"])
+l.add_log_type("important", name="info", color='black', highlight="orange", attributes=["bold"])
 
-    def preprocess_outputs(self, outputs):
-        cords = []
-        for box in outputs[0][0]: # output.shape: 1x1xNx7
-            thresh = box[2]
-            if thresh >= self.threshold:
-                xmin,ymin,xmax,ymax = box[3],box[4],box[5],box[6] 
-                cords.append((xmin, ymin, xmax, ymax))
-                
-                
-        return cords
+# update error log type
+l.update_log_type(logType='error', color='pink', attributes=['underline','bold'])
 
-    def preprocess_input(self, image):
-        p_frame = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
-        p_frame = p_frame.transpose((2,0,1))
-        p_frame = p_frame.reshape(1, *p_frame.shape)
-        
-        return p_frame
+# print logger
+print(l, end="\n\n")
+
+# test logging
+l.info("I am info, called using my shortcut method.")
+l.log("info", "I am  info, called using log method.")
+
+l.warn("I am warn, called using my shortcut method.")
+l.log("warn", "I am warn, called using log method.")
+
+l.error("I am error, called using my shortcut method.")
+l.log("error", "I am error, called using log method.")
+
+l.critical("I am critical, called using my shortcut method.")
+l.log("critical", "I am critical, called using log method.")
+
+l.debug("I am debug, called using my shortcut method.")
+l.log("debug", "I am debug, called using log method.")
+
+l.log("super critical", "I am super critical, called using log method because I have no shortcut method.")
+l.log("wrong", "I am wrong, called using log method because I have no shortcut method.")
+l.log("important", "I am important, called using log method because I have no shortcut method.")
+
+# print last logged messages
+print("")
+print("Last logged messages are:")
+print("=========================")
+print(l.lastLoggedMessage)
+print(l.lastLoggedDebug)
+print(l.lastLoggedInfo)
+print(l.lastLoggedWarning)
+print(l.lastLoggedError)
+print(l.lastLoggedCritical)
+
+# log data
+print("")
+print("Log random data and traceback stack:")
+print("====================================")
+l.info("Check out this data", data=list(range(10)))
+print("")
+
+# log error with traceback
+import traceback
+try:
+    1/range(10)
+except Exception as err:
+    l.error('%s (is this python ?)'%err, tback=traceback.extract_stack())

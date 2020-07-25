@@ -53,19 +53,22 @@ class FacialLandmarksDetectionModel:
         w=image.shape[1]
         coords = coords* np.array([w, h, w, h])
         coords = coords.astype(np.int32) #(lefteye_x, lefteye_y, righteye_x, righteye_y)
-        le_xmin=coords[0]-10
-        le_ymin=coords[1]-10
-        le_xmax=coords[0]+10
-        le_ymax=coords[1]+10
+        xl_axis=coords[0]
+        yl_axis=coords[1]
+        xr_axis=coords[2]
+        yr_axis=coords[3]
+        lefti_xmin=xl_axis-10
+        lefti_ymin=yl_axis-10
+        lefti_xmax=xl_axis+10
+        lefti_ymax=yl_axis+10
         
-        re_xmin=coords[2]-10
-        re_ymin=coords[3]-10
-        re_xmax=coords[2]+10
-        re_ymax=coords[3]+10
+        righti_xmin=xr_axis-10
+        righti_ymin=yr_axis-10
+        righti_xmax=xr_axis+10
+        righti_ymax=yr_axis+10
 
-        left_eye =  image[le_ymin:le_ymax, le_xmin:le_xmax]
-        right_eye = image[re_ymin:re_ymax, re_xmin:re_xmax]
-        eye_coords = [[le_xmin,le_ymin,le_xmax,le_ymax], [re_xmin,re_ymin,re_xmax,re_ymax]]
+        left_eye,right_eye =  image[lefti_ymin:lefti_ymax, lefti_xmin:lefti_xmax],image[righti_ymin:righti_ymax, righti_xmin:righti_xmax]
+        eye_coords = [[lefti_xmin,lefti_ymin,lefti_xmax,lefti_ymax], [righti_xmin,righti_ymin,righti_xmax,righti_ymax]]
 
         return left_eye, right_eye, eye_coords
 
@@ -83,9 +86,5 @@ class FacialLandmarksDetectionModel:
     def preprocess_output(self, outputs):
 
         outs = outputs[self.output_name][0]
-        leye_x = outs[0].tolist()[0][0]
-        leye_y = outs[1].tolist()[0][0]
-        reye_x = outs[2].tolist()[0][0]
-        reye_y = outs[3].tolist()[0][0]
-        
+        leye_x,leye_y,reye_x,reye_y  = outs[0].tolist()[0][0],outs[1].tolist()[0][0],outs[2].tolist()[0][0],outs[3].tolist()[0][0]
         return (leye_x, leye_y, reye_x, reye_y)

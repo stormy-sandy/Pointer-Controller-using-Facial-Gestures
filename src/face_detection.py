@@ -45,30 +45,31 @@ class FaceDetectionModel:
         TODO: You will need to complete this method.
         This method is meant for running predictions on the input image.
         '''
+        detections=[]
         processed_img = self.preprocess_input(image)
         outputs = self.net.infer({self.input_name:processed_img})
         coords = self.preprocess_output(outputs, prob_threshold)
         if (len(coords)==0):
             return 0, 0
         coords = coords[0] #take the first detected face
-        h=image.shape[0]
-        w=image.shape[1]
-        coords = coords* np.array([w, h, w, h])
-        coords = coords.astype(np.int32)
+        height,width=image.shape[0],image.shape[1]
+        x_min,y_min,x_max,y_max= coords
+        x_min,y_min,x_max,y_max=int(x_min * width),int(y_min * height),int(x_max * width),int(y_max * height)
         
-        detected_face = image[coords[1]:coords[3], coords[0]:coords[2]]
+        detected_face = image[y_min:y_max, x_min:x_max]
+        detections.append([x_min, y_min, x_max, y_max])
 
-        return detected_face, coords
+        return detected_face, detections
 
     def check_model(self):
         raise NotImplementedError
 
     def preprocess_input(self, image):
 
-        image_res = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
-        image_res = np.transpose(np.expand_dims(image_res, axis=0), (0,3,1,2))
+        image_in = cv2.resize(image, (self.input_shape[3], self.input_shape[2]))
+        image_in = np.transpose(np.expand_dims(image_in, axis=0), (0,3,1,2))
 
-        return image_res
+        return image_in
 
     def preprocess_output(self, outputs, prob_threshold):
 
@@ -77,10 +78,7 @@ class FaceDetectionModel:
         for out in outs:
             conf = out[2]
             if conf>prob_threshold:
-                x_min=out[3]
-                y_min=out[4]
-                x_max=out[5]
-                y_max=out[6]
+                x_min,y_min,x_max,y_max=out[3],out[4],out[5],out[6]
                 coords.append([x_min,y_min,x_max,y_max])
                 
         return coords

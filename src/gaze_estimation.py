@@ -58,10 +58,8 @@ class GazeEstimationModel:
 
     def preprocess_input(self, left_eye_image, right_eye_image):
 
-        le_image_res = cv2.resize(left_eye_image, (60, 60))
-        re_image_res = cv2.resize(right_eye_image, (60,60))
-        le_img_processed = np.transpose(np.expand_dims(le_image_res, axis=0), (0,3,1,2))
-        re_img_processed = np.transpose(np.expand_dims(re_image_res, axis=0), (0,3,1,2))
+        le_image_res,re_image_res = cv2.resize(left_eye_image, (60, 60)),cv2.resize(right_eye_image, (60,60))
+        le_img_processed,re_img_processed = np.transpose(np.expand_dims(le_image_res, axis=0), (0,3,1,2)) , np.transpose(np.expand_dims(re_image_res, axis=0), (0,3,1,2))
 
         return le_img_processed, re_img_processed
 
@@ -72,10 +70,9 @@ class GazeEstimationModel:
         mouse_cord = (0, 0)
         try:
             angle_r_fc = head_pose_angles[2]
-            sin_r = math.sin(angle_r_fc * math.pi / 180.0)
-            cos_r = math.cos(angle_r_fc * math.pi / 180.0)
-            x = gaze_vector[0] * cos_r + gaze_vector[1] * sin_r
-            y = -gaze_vector[0] * sin_r + gaze_vector[1] * cos_r
+            sin_r,cos_r = math.sin(angle_r_fc * math.pi / 180.0), math.cos(angle_r_fc * math.pi / 180.0)
+            x,y = gaze_vector[0] * cos_r + gaze_vector[1] * sin_r, -gaze_vector[0] * sin_r + gaze_vector[1] * cos_r
+             
             mouse_cord = (x, y)
         except Exception as e:
             self.logger.error("Error While preprocessing output in Gaze Estimation Model" + str(e))

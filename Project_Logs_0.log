@@ -1,0 +1,26 @@
+2020-07-25 07:31:29 - Log_test <ERROR> Stream Over
+2020-07-25 07:45:05 - Log_test <INFO> Stream Over
+2020-07-25 10:52:31 - Logs <INFO> Stream Over
+2020-07-25 11:48:49 - Logs <INFO> Stream Over
+2020-07-25 11:52:20 - Logs <INFO> Unable to detect the face.
+2020-07-25 11:52:21 - Logs <INFO> Unable to detect the face.
+2020-07-25 11:52:21 - Logs <INFO> Unable to detect the face.
+2020-07-25 11:52:22 - Logs <INFO> Unable to detect the face.
+2020-07-25 11:52:23 - Logs <INFO> Unable to detect the face.
+2020-07-25 11:52:24 - Logs <INFO> Unable to detect the face.
+2020-07-25 11:52:24 - Logs <INFO> Unable to detect the face.
+2020-07-25 11:52:25 - Logs <INFO> Unable to detect the face.
+2020-07-25 11:52:26 - Logs <INFO> Unable to detect the face.
+2020-07-25 21:44:35 - Logs <INFO> Unable to detect the face.
+2020-07-25 22:09:58 - Model_stats <ERROR> Unable to find input video file
+2020-07-25 22:11:53 - Model_stats <INFO> total time taken to load model
+1.0417335033416748
+2020-07-25 22:11:54 - Model_stats <INFO> Stream Over
+2020-07-26 03:33:31 - Model_stats <ERROR> Unable to find input video file
+2020-07-26 03:40:06 - Model_stats <INFO> Model load time1.869997501373291
+2020-07-26 03:41:34 - Model_stats <INFO> Stream Over
+2020-07-26 04:36:55 - Model_stats <INFO> Model load time3.548067808151245
+2020-07-26 04:45:54 - Model_stats <INFO> Model load time1.103555679321289
+2020-07-26 04:49:26 - Model_stats <INFO> Model load time1.5289952754974365
+2020-07-26 04:50:52 - Model_stats <INFO> Total Inference time85.6250216960907
+2020-07-26 04:50:52 - Model_stats <INFO> Stream Over
